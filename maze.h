@@ -1,5 +1,5 @@
-#ifndef classes
-#define classes
+#ifndef maze
+#define maze
 
 #include <iostream>
 #include <ostream>
@@ -26,39 +26,47 @@ class Point {
 };
 
 class Cell {
-    Point centerSquare;
 
-    Cell(Point& other);
-    Cell(int x, int y);
-    double judgeDistance(Cell & other);
-    ~Cell();
+    
+    Point centerSquare;
+    char type;
+
+    public:
+        Cell(Point& other, char colour);
+        Cell(int x, int y, char colour);
+        double judgeDistance(Cell & other);
+        ~Cell();
 };
 
 
 class Grid {
 
-    std::vector<std::vector<int>> theGrid;
-    Grid(int size);
-    Grid(int sizex, int sizey);
-    void GenerateMaze();
-    void ColourCell(Point cell,std::string colour);
-    void GetCell(Point cell);
-    void generate_Path();
-    ~Grid();
+    public:
+
+        std::vector<std::vector<Cell *>> theGrid;
+        Grid(int size);
+        Grid(int sizex, int sizey);
+        void GenerateMaze();
+        void ColourCell(Point cell,std::string colour);
+        void GetCell(Point cell);
+        void generate_Path();
+        ~Grid();
 };
 
 std::ostream & operator<<(std::ostream & os, const Grid &);
 
 class graphing_algos {
 
-    std::vector <Point> dJikstra(Grid &, 
-            Point & start, Point &end);
+    public:
 
-    std::vector <Point> breathFirst(Grid &, 
-            Point & start, Point &end);
+        std::vector <Point> dJikstra(Grid &, 
+                Point & start, Point &end);
 
-    std::vector <Point> Astar(Grid &, 
-            Point & start, Point &end);
+        std::vector <Point> breathFirst(Grid &, 
+                Point & start, Point &end);
+
+        std::vector <Point> Astar(Grid &, 
+                Point & start, Point &end);
 
 };
 
@@ -68,6 +76,8 @@ template<typename T> class binary_heap {
     // 2n+1 left child
     // 2n+2 right child
     // n-1/2 parent
+    //
+    public:
     binary_heap(): myHeap{std::vector<T>(0)} {}
 
     void add(T val) {
@@ -99,6 +109,9 @@ template<typename T> class binary_heap {
     void look_top() {
         return myHeap[0];
     }
+
+    friend std::ostream & operator<<(std::ostream & os, const binary_heap<int> &);
 };
+
 #endif
 

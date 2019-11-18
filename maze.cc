@@ -1,4 +1,5 @@
 #include "maze.h"
+#include <iostream>
 #include <vector>
 
 Point::Point(int x, int y): x_coord{x}, y_coord{y} {}
@@ -30,17 +31,27 @@ double Point::EucledianDistance(Point & other) {
 }
 
 
-Cell::Cell(Point & other): centerSquare{other} {}
+Cell::Cell(Point & other, char colour = 'w'): centerSquare{other}, type{colour} {}
 
-Cell::Cell(int x, int y): centerSquare{x,y} {}
+Cell::Cell(int x, int y, char colour = 'w'): centerSquare{x,y}, type {colour} {}
 
 double Cell::judgeDistance(Cell & other) {
     return centerSquare.EucledianDistance(other.centerSquare);
 }
 
-Grid::Grid(int size): theGrid{std::vector<std::vector<int>>
-    (size,std::vector<int>(size,0))} {}
+Grid::Grid(int size) {
+    std::vector<std::vector<Cell *>> myGrid;
+}
 
-Grid::Grid(int sizex, int sizey): theGrid{std::vector<std::vector<int>> (sizey,std::vector<int>(sizex,0))} {}
+Grid::Grid(int sizex, int sizey) {
+    std::vector<std::vector<Cell *>> myGrid;
+}
 
-
+std::ostream & operator<<(std::ostream & os, const binary_heap<int> & heap) {
+    
+    for (unsigned int i = 0; i < heap.myHeap.size(); i++) {
+        os << heap.myHeap[i] << " ";
+    }
+    os << std::endl;
+    return os;
+}
