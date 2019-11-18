@@ -4,48 +4,31 @@
 #include <iostream>
 #include <ostream>
 #include <string>
+#include <type_traits>
 #include <vector>
 #include <cmath>
 
-
-template <typename T> class Point {
-        T x_coord;
-        T y_coord;
+class Point {
+    int x_coord;
+    int y_coord;
 
     public:
-        Point(T x, T y): x_coord{x}, y_coord{y} {}
-        Point(Point <T> & other): x_coord{other.x_coord}, y_coord{other.x_coord} {}
-        ~Point() {}
+        Point(int x, int y);
+        Point(Point & other);
+        ~Point();
         
-        std::pair<T, T> getcoords() {
-            std::pair<T,T> retval = std::pair<T,T>{x_coord, y_coord};
-            return retval;
-        }
+        std::pair<int, int> getcoords();
 
-        Point <T> operator + (Point <T> & other) {
-            Point <T> temp = Point<T>{x_coord, y_coord};
-            temp.x_coord = temp.x_coord + other.x_coord;
-            temp.y_coord = temp.y_coord + other.y_coord;
-            return temp;
-        }
-        Point <T> operator - (Point <T> & other) {
-            Point <T> temp = Point<T>{x_coord, y_coord};
-            temp.x_coord = temp.x_coord - other.x_coord;
-            temp.y_coord = temp.y_coord - other.y_coord;
-            return temp;
-        }
-        double EucledianDistance(Point <T> & other) {
-            T delta_x = (x_coord - other.x_coord);
-            T delta_y = (y_coord - other.y_coord);
-            double hyp = sqrt((delta_x * delta_x) + (delta_y * delta_y));
-            return hyp;
-        }
+        Point operator + (Point & other);
+        Point operator - (Point & other);
+        double EucledianDistance(Point & other);
+
 };
 
 class Cell {
-    Point <int> centerSquare;
+    Point centerSquare;
 
-    Cell(Point<int> & other);
+    Cell(Point& other);
     Cell(int x, int y);
     double judgeDistance(Cell & other);
     ~Cell();
@@ -58,8 +41,8 @@ class Grid {
     Grid(int size);
     Grid(int sizex, int sizey);
     void GenerateMaze();
-    void ColourCell(Point <int> cell,std::string colour);
-    void GetCell(Point <int> cell);
+    void ColourCell(Point cell,std::string colour);
+    void GetCell(Point cell);
     void generate_Path();
     ~Grid();
 };
@@ -68,15 +51,54 @@ std::ostream & operator<<(std::ostream & os, const Grid &);
 
 class graphing_algos {
 
-    std::vector <Point <int>> dJikstra(Grid &, 
-            Point <int> & start, Point <int> &end);
+    std::vector <Point> dJikstra(Grid &, 
+            Point & start, Point &end);
 
-    std::vector <Point <int>> breathFirst(Grid &, 
-            Point <int> & start, Point <int> &end);
+    std::vector <Point> breathFirst(Grid &, 
+            Point & start, Point &end);
 
-    std::vector <Point <int>> Astar(Grid &, 
-            Point <int> & start, Point <int> &end);
+    std::vector <Point> Astar(Grid &, 
+            Point & start, Point &end);
 
+};
+
+template<typename T> class binary_heap {
+    std::vector <T> myHeap;
+
+    // 2n+1 left child
+    // 2n+2 right child
+    // n-1/2 parent
+    binary_heap(): myHeap{std::vector<T>(0)} {}
+
+    void add(T val) {
+        int idx = myHeap.size();
+        myHeap.push_back(val);
+        while (myHeap[(idx-1)/2] > val && idx != 0) {
+            std::swap(myHeap[idx],myHeap[(idx-1)/2]);
+            idx = (idx-1)/2;
+        }
+    }
+    void remove_top() {
+        int last_node = myHeap.size() - 1;
+        std::swap(myHeap[0], myHeap[last_node]);
+        int sz = myHeap.size();
+        int idx = 0;
+
+        while (((myHeap[idx] > myHeap[(2*idx)+1]) || (myHeap[idx] > myHeap[(2*idx)+2])) && idx < sz) {
+            
+            if (myHeap[2*idx + 1] < myHeap[2*idx + 2]) {
+                std::swap(myHeap[idx], myHeap[2*idx + 1]);
+                idx = 2*idx + 1;
+            } 
+            else {
+                std::swap(myHeap[idx], myHeap[2*idx + 2]);
+                idx = 2*idx + 2;
+            }
+        }
+    }
+    void look_top() {
+        return myHeap[0];
+    }
 };
 #endif
 
