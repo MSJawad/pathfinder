@@ -40,18 +40,33 @@ double Cell::judgeDistance(Cell & other) {
 }
 
 Grid::Grid(int size) {
-    std::vector<std::vector<Cell *>> myGrid;
+    std::vector < std::vector <Cell *> > myGrid;
+    for (int y = 0; y < size; y++) {
+        vector <Cell *> myRow;
+        for (int x = 0; x < size; x++) {
+            myRow.push_back(new Cell(x,y));
+        }
+        myGrid.push_back(myRow);
+    }
 }
 
 Grid::Grid(int sizex, int sizey) {
-    std::vector<std::vector<Cell *>> myGrid;
+    std::vector < std::vector <Cell *> > myGrid;
+    for (int y = 0; y < sizey; y++) {
+        vector <Cell *> myRow;
+        for (int x = 0; x < sizex; x++) {
+            myRow.push_back(new Cell(x,y));
+        }
+        myGrid.push_back(myRow);
+    }
 }
+
+
 
 std::ostream & operator<<(std::ostream & os, const binary_heap<int> & heap) {
     
     for (unsigned int i = 0; i < heap.myHeap.size(); i++) {
         os << heap.myHeap[i] << " ";
     }
-    os << std::endl;
     return os;
 }
