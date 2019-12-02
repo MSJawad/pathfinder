@@ -3,7 +3,7 @@
 #include <vector>
 
 Point::Point(int x, int y): x_coord{x}, y_coord{y} {}
-Point::Point(Point & other): x_coord{other.x_coord}, y_coord{other.x_coord} {}
+Point::Point(const Point & other): x_coord{other.x_coord}, y_coord{other.x_coord} {}
 Point::~Point() {}
 
 std::pair<int, int> Point::getcoords() {
@@ -35,32 +35,40 @@ Cell::Cell(Point & other, char colour = 'w'): centerSquare{other}, type{colour} 
 
 Cell::Cell(int x, int y, char colour = 'w'): centerSquare{x,y}, type {colour} {}
 
+Cell::Cell(const Cell & other): centerSquare{other.centerSquare}, type{other.type} {}
+
+Cell::~Cell() {}
+
+
 double Cell::judgeDistance(Cell & other) {
     return centerSquare.EucledianDistance(other.centerSquare);
 }
 
 Grid::Grid(int size) {
-    std::vector < std::vector <Cell *> > myGrid;
+    std::vector<std::vector<Cell>> myGrid;
     for (int y = 0; y < size; y++) {
-        vector <Cell *> myRow;
+        std::vector <Cell> myRow;
         for (int x = 0; x < size; x++) {
-            myRow.push_back(new Cell(x,y));
+            Cell coordcell{x,y};
+            myRow.push_back(coordcell);
         }
         myGrid.push_back(myRow);
     }
 }
 
 Grid::Grid(int sizex, int sizey) {
-    std::vector < std::vector <Cell *> > myGrid;
+    std::vector<std::vector<Cell>> myGrid;
     for (int y = 0; y < sizey; y++) {
-        vector <Cell *> myRow;
+        std::vector <Cell> myRow;
         for (int x = 0; x < sizex; x++) {
-            myRow.push_back(new Cell(x,y));
+            Cell coordcell{x,y};
+            myRow.push_back(coordcell);
         }
         myGrid.push_back(myRow);
     }
 }
 
+Grid::~Grid() {}
 
 
 std::ostream & operator<<(std::ostream & os, const binary_heap<int> & heap) {

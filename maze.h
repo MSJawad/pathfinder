@@ -14,7 +14,7 @@ class Point {
 
     public:
         Point(int x, int y);
-        Point(Point & other);
+        Point(const Point & other);
         ~Point();
         
         std::pair<int, int> getcoords();
@@ -34,6 +34,7 @@ class Cell {
     public:
         Cell(Point& other, char colour);
         Cell(int x, int y, char colour);
+        Cell(const Cell &);
         double judgeDistance(Cell & other);
         ~Cell();
 };
@@ -43,11 +44,11 @@ class Grid {
 
     public:
 
-        std::vector<std::vector<Cell *>> theGrid;
+        std::vector<std::vector<Cell>> theGrid;
         Grid(int size);
         Grid(int sizex, int sizey);
         void GenerateMaze();
-        void ColourCell(Point cell,std::string colour);
+        void ColourCell(Point cell,char colour);
         void GetCell(Point cell);
         void generate_Path();
         ~Grid();
