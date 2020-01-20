@@ -7,72 +7,27 @@
 #include <type_traits>
 #include <vector>
 #include <cmath>
-
-class Point {
-    int x_coord;
-    int y_coord;
-
-    public:
-        Point(int x, int y);
-        Point(const Point & other);
-        ~Point();
-        
-        std::pair<int, int> getcoords();
-
-        Point operator + (Point & other);
-        Point operator - (Point & other);
-        double EucledianDistance(Point & other);
-
-};
-
-class Cell {
-
-    
-    Point centerSquare;
-    char type;
-
-    public:
-        Cell(Point& other, char colour);
-        Cell(int x, int y, char colour);
-        Cell(const Cell &);
-        double judgeDistance(Cell & other);
-        ~Cell();
-};
+#include "cell.h"
 
 
 class Grid {
 
+    std::vector <std::vector<Cell>> theGrid;
+    std::pair <int,int> dims;
     public:
 
-        std::vector<std::vector<Cell>> theGrid;
         Grid(int size);
         Grid(int sizex, int sizey);
         void GenerateMaze();
-        void ColourCell(Point cell,char colour);
-        void GetCell(Point cell);
-        void generate_Path();
+        void ColourCell(std::pair<int,int> &,char colour);
+        Cell GetCell(int x, int y);
         ~Grid();
         friend std::ostream & operator<<(std::ostream & os, const Grid &);
 };
 
 std::ostream & operator<<(std::ostream & os, const Grid &);
 
-class graphing_algos {
-
-    public:
-
-        std::vector <Point> dJikstra(Grid &, 
-                Point & start, Point &end);
-
-        std::vector <Point> breathFirst(Grid &, 
-                Point & start, Point &end);
-
-        std::vector <Point> Astar(Grid &, 
-                Point & start, Point &end);
-
-};
-
-template<typename T> class binary_heap {
+template <typename T> class binary_heap {
     std::vector <T> myHeap;
 
     // 2n+1 left child
@@ -133,6 +88,21 @@ template<typename T> class binary_heap {
     }
 
     friend std::ostream & operator<<(std::ostream & os, const binary_heap<int> &);
+};
+
+class graphing_algos {
+
+    public:
+
+        std::vector <Point> dJikstra(Grid &, 
+                Point & start, Point &end);
+
+        std::vector <Point> breathFirst(Grid &, 
+                Point & start, Point &end);
+
+        std::vector <Point> Astar(Grid &, 
+                Point & start, Point &end);
+
 };
 
 #endif

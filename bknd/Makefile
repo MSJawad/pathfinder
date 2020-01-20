@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++14 -Wall -MMD -Werror=vla
 EXEC = pathfinder
-OBJECTS = maze.o main.o 
+OBJECTS = maze.o cell.o main.o 
 
 DEPENDS = ${OBJECTS:.o=.d}
 
