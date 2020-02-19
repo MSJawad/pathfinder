@@ -4,7 +4,6 @@
 #include <iostream>
 #include <ostream>
 #include <string>
-#include <cmath>
 
 class Point {
     int x_coord;
@@ -24,7 +23,7 @@ class Point {
         bool operator == (Point & other);
         
 
-        double EucledianDistance(Point & other);
+        int ManhattanDistance(Point & other);
 
 };
 
@@ -36,6 +35,8 @@ class Cell {
 
     int scoresofar;
 
+    Cell * neighbour;
+
     public:
 
         Cell(Point& other, char colour);
@@ -46,6 +47,8 @@ class Cell {
         char get_colour() const;
         int get_score() const;
         void set_score(int);
+        Cell * getNeighbour() const;
+        void setNeighbour(Cell *);
         double judgeDistance(Cell & other);
         ~Cell();
         friend std::ostream & operator <<(std::ostream & os, const Cell & out);

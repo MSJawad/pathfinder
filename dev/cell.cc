@@ -35,19 +35,18 @@ bool Point::operator == (Point & other) {
     return ((other.x_coord == x_coord) && (other.y_coord == y_coord));
 }
 
-double Point::EucledianDistance(Point & other) {
-    int delta_x = (x_coord - other.x_coord);
-    int delta_y = (y_coord - other.y_coord);
-    double hyp = sqrt((delta_x * delta_x) + (delta_y * delta_y));
-    return hyp;
+int Point::ManhattanDistance(Point & other) {
+    int delta_x = abs(x_coord - other.x_coord);
+    int delta_y = abs(y_coord - other.y_coord);
+    return (delta_x + delta_y);
 }
 
 
-Cell::Cell(Point & other, char colour = 'w'): centerSquare{other}, type{colour}, scoresofar{INT_MAX} {}
+Cell::Cell(Point & other, char colour = 'w'): centerSquare{other}, type{colour}, scoresofar{INT_MAX}, neighbour{NULL} {}
 
-Cell::Cell(int x, int y, char colour = 'w'): centerSquare{x,y}, type {colour}, scoresofar{INT_MAX} {}
+Cell::Cell(int x, int y, char colour = 'w'): centerSquare{x,y}, type {colour}, scoresofar{INT_MAX}, neighbour{NULL} {}
 
-Cell::Cell(const Cell & other): centerSquare{other.centerSquare}, type{other.type}, scoresofar{other.scoresofar} {}
+Cell::Cell(const Cell & other): centerSquare{other.centerSquare}, type{other.type}, scoresofar{other.scoresofar}, neighbour{NULL} {}
 
 void Cell::change_colour(char colour) {
     type = colour;
@@ -65,6 +64,14 @@ void Cell::set_score(int new_score) {
     scoresofar = new_score;
 }
 
+Cell * Cell::getNeighbour() const {
+    return neighbour;
+}
+
+void Cell::setNeighbour(Cell * newbour) {
+    neighbour = newbour;
+}
+
 Point Cell::get_coords() const {
     return centerSquare;
 }
@@ -78,5 +85,5 @@ Cell::~Cell() {}
 
 
 double Cell::judgeDistance(Cell & other) {
-    return centerSquare.EucledianDistance(other.centerSquare);
+    return centerSquare.ManhattanDistance(other.centerSquare);
 }

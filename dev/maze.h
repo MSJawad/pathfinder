@@ -20,7 +20,13 @@ class Grid {
         Grid(int sizex, int sizey);
         void GenerateMaze();
         void ColourCell(std::pair<int,int> &,char colour);
-        Cell GetCell(int x, int y);
+        Cell GetCell(std::pair<int,int> &);
+        int getCellScore(std::pair<int,int> & coords);
+        void setCellScore(std::pair<int,int> & coords, int score);
+        std::pair<int, int> getmaxdims();
+        std::pair<int,int> getCellNeighbour(std::pair<int,int> & coords);
+        void setCellNeighbour(std::pair<int,int> & coords, 
+                std::pair<int,int> & neighbourcoords);
         ~Grid();
         friend std::ostream & operator<<(std::ostream & os, const Grid &);
 };
@@ -94,13 +100,13 @@ class graphing_algos {
 
     public:
 
-        std::vector <Point> dJikstra(Grid &, 
+        void dJikstra(Grid &, 
                 Point & start, Point &end);
 
-        std::vector <Point> breathFirst(Grid &, 
+        void breathFirst(Grid &, 
                 Point & start, Point &end);
 
-        std::vector <Point> Astar(Grid &, 
+        void Astar(Grid &, 
                 Point & start, Point &end);
 
 };
