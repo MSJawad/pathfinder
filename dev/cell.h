@@ -35,7 +35,7 @@ class Cell {
 
     int scoresofar;
 
-    Cell * neighbour;
+    std::pair<int,int> neighbour;
 
     public:
 
@@ -47,8 +47,8 @@ class Cell {
         char get_colour() const;
         int get_score() const;
         void set_score(int);
-        Cell * getNeighbour() const;
-        void setNeighbour(Cell *);
+        std::pair<int,int> getNeighbour() const;
+        void setNeighbour(std::pair<int,int>);
         double judgeDistance(Cell & other);
         ~Cell();
         friend std::ostream & operator <<(std::ostream & os, const Cell & out);

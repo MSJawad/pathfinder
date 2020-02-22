@@ -1,4 +1,5 @@
 #include "maze.h"
+#include <utility>
 using namespace std;
 
 int main(int argc, char * argv[]) {
@@ -33,6 +34,20 @@ int main(int argc, char * argv[]) {
   Grid myGrid{67};
   myGrid.GenerateMaze();
   cout << myGrid;
+
+  int x1,y1,x2,y2;
+  char comma = ',';
+
+  cin >> x1 >> comma >> y1;
+  cin >> x2 >> comma >> y2;
+
+  Point start{x1,y1};
+  Point end{x2,y2};
+
+  graphing_algos testing;
+
+  testing.Astar(myGrid,start,end);
+
   int val;
   cin >> val;
 }

@@ -7,6 +7,7 @@
 #include "cell.h"
 #include <time.h>
 #include <vector>
+#include <unistd.h>
 
 int scale = 700;
 
@@ -37,8 +38,7 @@ Grid::Grid(int sizex, int sizey):
         }
         theGrid.push_back(myRow);
     }
-    display->fillRectangle(0,0, (scale / sizex) * sizex, 
-            (scale / sizey) * sizey,display->Black);
+    display->fillRectangle(0,0, (scale / sizex) * sizex,(scale / sizey) * sizey,display->Black);
 }
 
 void Grid::ColourCell(std::pair<int,int> & coordinates, char colour) {
@@ -60,10 +60,21 @@ void Grid::ColourCell(std::pair<int,int> & coordinates, char colour) {
         case 'c':
             col = display->Cyan;
             break;
+        case 'm':
+            col = display->Magenta;
+            break;
+        case 'k':
+            col = display->Khaki;
+            break;
+        case 'l':
+            col = display->Blue;
+            break;
         default:
             col = display->Black;
             break;
     }
+
+    
     display->fillRectangle(coordinates.first*cell_size.first,
             coordinates.second*cell_size.second,cell_size.first,
             cell_size.second,col);
@@ -81,23 +92,25 @@ int Grid::getCellScore(std::pair<int,int> & coords) {
     return (this->theGrid)[coords.second][coords.first].get_score();
 }
 
-void Grid::SetCellScore(std::pair<int,int> & coords, int score) {
-    return (this->theGrid)[coords.second][coords.first].set_score(score);
+void Grid::setCellScore(std::pair<int,int> & coords, int score) {
+    (this->theGrid)[coords.second][coords.first].set_score(score);
 }
 
 std::pair<int,int> Grid::getCellNeighbour(std::pair<int,int> & coords) {
-    Cell * nbr = ((this->theGrid)[coords.second][coords.first]).getNeighbour();
-    if (nbr) {
-        return nbr->get_coords().getcoords();
+    std::pair<int,int> nbr = 
+        ((this->theGrid)[coords.second][coords.first]).getNeighbour();
+    if (nbr.first >= 0) {
+        std::pair<int, int> retval = nbr; 
+        return retval; 
     } else {
-        throw "neighbour is null";
+        std::pair<int,int> invalid{-1,-1};
+        return invalid;
     }
 }
 
-void Grid::SetCellNeighbour(std::pair<int,int> & coords, 
+void Grid::setCellNeighbour(std::pair<int,int> & coords, 
         std::pair<int,int> & nbrcoords) {
-    return (this->theGrid)[coords.second][coords.first].
-        setNeighbour( & (this->theGrid)[nbrcoords.second][nbrcoords.first]);
+    ((this->theGrid)[coords.second][coords.first]).setNeighbour(nbrcoords);
 }
 
 std::ostream & operator <<(std::ostream & os, const Grid & out) {
@@ -176,15 +189,17 @@ std::ostream & operator<<(std::ostream & os, const binary_heap<int> & heap) {
 }
 
 class pair_wrapper {
-    Point rawclass;
+    std::pair<int,int> rawclass;
     int heurStart;
     int heurEnd;
     public:
+        pair_wrapper() {}
 
         pair_wrapper(std::pair<int,int>& curr, int stepssofar, Point & end):
-            rawclass{curr.first,curr.second},
-            heurStart{stepssofar},
-            heurEnd{rawclass.ManhattanDistance(end)} {}
+            rawclass{curr}, heurStart{stepssofar} {
+            Point temp{curr.first,curr.second};
+            heurEnd = temp.ManhattanDistance(end);
+        }
         bool operator <(pair_wrapper & other) {
             return (heurEnd+heurStart) < (other.heurEnd + other.heurStart);
         }
@@ -195,7 +210,7 @@ class pair_wrapper {
             return (heurEnd+heurStart) > (other.heurEnd + other.heurStart);
         }
         std::pair<int,int> retcoords() {
-            return rawclass.getcoords();
+            return rawclass;
         }
         int getscore() {
             return heurEnd + heurStart;
@@ -206,6 +221,8 @@ class pair_wrapper {
         int get_endh() {
             return heurEnd;
         }
+
+        ~pair_wrapper() {}
 };
 
 void graphing_algos::Astar(Grid & graph, Point & start, Point & end) { 
@@ -217,8 +234,8 @@ void graphing_algos::Astar(Grid & graph, Point & start, Point & end) {
     } else if (graph.GetCell(endcond).get_colour() == 'b') {
         throw "cant end at black";
     } else {
-        graph.ColourCell(curr,'p');
-        graph.ColourCell(endcond,'p');
+        graph.ColourCell(curr,'l');
+        graph.ColourCell(endcond,'l');
     }
 
     std::unordered_set<std::pair<int,int>,
@@ -235,12 +252,19 @@ void graphing_algos::Astar(Grid & graph, Point & start, Point & end) {
     std::pair<int,int> maxdims = graph.getmaxdims();
 
     while (curr != endcond) {
-        (open_nodes.find(curr) == open_nodes.end()) ? 
-            throw "curr not in open nodes": open_nodes.erase(curr);
-        (closed_nodes.find(curr) != closed_nodes.end()) ? 
-            throw "curr in closed nodes": closed_nodes.insert(curr);
+        usleep(1000000);
+        
+        if (open_nodes.find(curr) == open_nodes.end()) {
+            throw "curr not in open nodes";
+        }
+        open_nodes.erase(curr);
+        if (closed_nodes.find(curr) != closed_nodes.end()) {
+            throw "curr in closed nodes";
+        }
+        closed_nodes.insert(curr);
         
         std::vector <std::pair<int,int>> neighbours;
+        steps++;
         for (auto neighbour: nsew) {
         
             std::pair<int,int> nbrs{neighbour.first+curr.first,
@@ -249,10 +273,59 @@ void graphing_algos::Astar(Grid & graph, Point & start, Point & end) {
                     (nbrs.second >= 0) && (nbrs.second < maxdims.second))) { 
             continue;
             }
-            if ((graph.GetCell(nbrs).get_colour() != 'b') &&
+            else if ((graph.GetCell(nbrs).get_colour() != 'b') &&
                     (closed_nodes.find(nbrs) == closed_nodes.end())) {
                 neighbours.push_back(nbrs);
             }
         }
+
+        for (auto nbr: neighbours) {
+            graph.ColourCell(nbr,'g');
+            open_nodes.insert(nbr);
+            int score = graph.getCellScore(nbr);
+            
+            pair_wrapper nbrwrp{nbr,steps, end}; 
+            if (score == INT_MAX) {
+                track.add(nbrwrp);
+                graph.setCellScore(nbr,nbrwrp.getscore());
+                graph.setCellNeighbour(nbr, curr);
+                std::cout << "("<< nbr.first <<  ", "<<nbr.second << 
+                    ")'parent is set as ("<< graph.getCellNeighbour(nbr).first <<
+                    ", "<<graph.getCellNeighbour(nbr).second << ")"
+                    << std::endl;
+            } else if (std::min(nbrwrp.getscore(), score) == nbrwrp.getscore()) {
+                track.add(nbrwrp);
+                graph.setCellScore(nbr,nbrwrp.getscore());
+                graph.setCellNeighbour(nbr, curr);
+            }
+        }
+
+        while (true) {
+            if (track.is_Empty()) {
+                throw "b_heap is empty";
+            }
+            pair_wrapper wrpnxt = track.look_top();
+            std::pair<int,int> pos_next = wrpnxt.retcoords();
+            if (closed_nodes.find(pos_next) != closed_nodes.end()) {
+                track.remove_top();
+                continue;
+            } else {
+                track.remove_top();
+                curr = pos_next;
+                steps = wrpnxt.get_starth();
+                break;
+            }
+
+        }
     }
+    std::pair <int, int> pos = end.getcoords();
+    pos = graph.getCellNeighbour(pos);
+
+    while (pos.first >= 0) {
+        graph.ColourCell(pos,'c');
+        pos = graph.getCellNeighbour(pos);
+    }
+    curr = start.getcoords();
+    graph.ColourCell(curr,'l');
+    graph.ColourCell(endcond,'l');
 }

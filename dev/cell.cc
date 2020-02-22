@@ -1,4 +1,5 @@
 #include "cell.h"
+#include <iterator>
 #include <string>
 #include <bits/stdc++.h>
 
@@ -42,11 +43,11 @@ int Point::ManhattanDistance(Point & other) {
 }
 
 
-Cell::Cell(Point & other, char colour = 'w'): centerSquare{other}, type{colour}, scoresofar{INT_MAX}, neighbour{NULL} {}
+Cell::Cell(Point & other, char colour = 'w'): centerSquare{other}, type{colour}, scoresofar{INT_MAX}, neighbour{std::pair<int,int>{-1,-1}} {}
 
-Cell::Cell(int x, int y, char colour = 'w'): centerSquare{x,y}, type {colour}, scoresofar{INT_MAX}, neighbour{NULL} {}
+Cell::Cell(int x, int y, char colour = 'w'): centerSquare{x,y}, type {colour}, scoresofar{INT_MAX}, neighbour{std::pair<int,int>{-1,-1}} {}
 
-Cell::Cell(const Cell & other): centerSquare{other.centerSquare}, type{other.type}, scoresofar{other.scoresofar}, neighbour{NULL} {}
+Cell::Cell(const Cell & other): centerSquare{other.centerSquare}, type{other.type}, scoresofar{other.scoresofar}, neighbour{std::pair<int,int>{-1,-1}} {}
 
 void Cell::change_colour(char colour) {
     type = colour;
@@ -64,11 +65,13 @@ void Cell::set_score(int new_score) {
     scoresofar = new_score;
 }
 
-Cell * Cell::getNeighbour() const {
+std::pair<int,int> Cell::getNeighbour() const {
     return neighbour;
 }
 
-void Cell::setNeighbour(Cell * newbour) {
+void Cell::setNeighbour(std::pair<int,int> newbour) {
+    std::cout << "Cell is called with (" << 
+        newbour.first << ", " << newbour.second  << ")" << std::endl;
     neighbour = newbour;
 }
 

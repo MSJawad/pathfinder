@@ -16,17 +16,16 @@ class Grid {
     std::pair <int,int> dims;
     public:
 
-        Grid(int size);
-        Grid(int sizex, int sizey);
+        Grid(int);
+        Grid(int, int);
         void GenerateMaze();
-        void ColourCell(std::pair<int,int> &,char colour);
+        void ColourCell(std::pair<int,int> &,char);
         Cell GetCell(std::pair<int,int> &);
-        int getCellScore(std::pair<int,int> & coords);
-        void setCellScore(std::pair<int,int> & coords, int score);
+        int getCellScore(std::pair<int,int> &);
+        void setCellScore(std::pair<int,int> &, int);
         std::pair<int, int> getmaxdims();
-        std::pair<int,int> getCellNeighbour(std::pair<int,int> & coords);
-        void setCellNeighbour(std::pair<int,int> & coords, 
-                std::pair<int,int> & neighbourcoords);
+        std::pair<int,int> getCellNeighbour(std::pair<int,int> &);
+        void setCellNeighbour(std::pair<int,int> &, std::pair<int,int> &);
         ~Grid();
         friend std::ostream & operator<<(std::ostream & os, const Grid &);
 };
@@ -85,7 +84,7 @@ template <typename T> class binary_heap {
         }
         return retval;
     }
-    void look_top() {
+    T look_top() {
         return myHeap[0];
     }
     bool is_Empty() {
