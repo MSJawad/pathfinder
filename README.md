@@ -1,6 +1,6 @@
 # Pathfinder
 
-[![CI](https://github.com/MSJawad/pathfinder/actions/workflows/ci.yml/badge.svg)](https://github.com/MSJawad/pathfinder/actions/workflows/ci.yml)
+[![CI](https://github.com/MSJawad/pathfinder/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/MSJawad/pathfinder/actions/workflows/ci.yml)
 
 A C++17 program that generates random mazes and races **A\***, **Dijkstra** and
 **breadth-first search** through them side by side, counting how much of the
