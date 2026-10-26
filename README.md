@@ -130,11 +130,11 @@ The demo GIF above is made from the program's own frames by
 
 ## History and credits
 
-I first wrote this over the winter of 2019-20 as a single-panel A\* visualizer drawn with raw
-Xlib. Its drawing code used the `Xwindow` helper class that the University of
-Waterloo's CS 246 course gives to its students. That code has since been
-replaced by SDL2 so the program runs natively on macOS, and none of the helper
-remains, but the credit stays.
+I first wrote this over the winter of 2019-20 as a single-panel A\* visualizer
+drawn with raw Xlib. Its drawing code used the `Xwindow` helper class that the
+University of Waterloo's CS 246 course gives to its students. That code has
+since been replaced by SDL2 so the program runs natively on macOS, and none of
+the helper remains, but the credit stays.
 
 ## Contact
 
