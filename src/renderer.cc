@@ -10,6 +10,7 @@
 #include <climits>
 #include <cstdio>
 #include <iostream>
+#include <vector>
 
 #include "font.h"
 
@@ -31,6 +32,11 @@ constexpr Colour kPath{0x8b, 0x5c, 0xf6};
 constexpr Colour kStart{0x22, 0xc5, 0x5e};
 constexpr Colour kEnd{0xef, 0x44, 0x44};
 
+// Every colour a maze cell can take, so cells can be batched by colour.
+enum CellColour { kWallCell, kFloorCell, kFrontierCell, kVisitedCell, kPathCell, kStartCell, kEndCell, kCellColours };
+
+constexpr Colour kCellPalette[kCellColours] = {kWall, kFloor, kFrontier, kVisited, kPath, kStart, kEnd};
+
 struct LegendItem {
     const char *label;
     Colour colour;
@@ -48,9 +54,9 @@ constexpr int kPanelGap = 32;
 constexpr int kHeaderHeight = kLineHeight * 2 + 8 + 14;
 constexpr int kLegendSwatch = kLineHeight;
 constexpr int kLegendRowHeight = kLineHeight + 10;
-constexpr int kMinCell = 1;
-// Below this cell size grid lines would swamp the cells, so none are drawn.
-constexpr int kMinCellWithLines = 4;
+// Smaller cells would leave no room between the grid lines, so mazes that
+// need them are drawn as one scaled texture per panel instead.
+constexpr int kMinCell = 4;
 constexpr int kMaxCell = 32;
 constexpr int kFramesPerSecond = 30;
 
@@ -102,6 +108,29 @@ template <typename Place> int layout_legend(int width, Place place) {
     return row + 1;
 }
 
+CellColour cell_colour(const Grid &grid, const Search &search, Point p, Point start, Point end) {
+    if (grid.is_wall(p)) {
+        return kWallCell;
+    }
+    if (p == start) {
+        return kStartCell;
+    }
+    if (p == end) {
+        return kEndCell;
+    }
+    switch (search.state(p)) {
+    case CellState::Unseen:
+        return kFloorCell;
+    case CellState::Frontier:
+        return kFrontierCell;
+    case CellState::Visited:
+        return kVisitedCell;
+    case CellState::Path:
+        return kPathCell;
+    }
+    return kFloorCell;
+}
+
 std::string stats_line(const Search &search) {
     std::string path = search.found() ? std::to_string(search.path_length()) : "-";
     return "Expanded " + std::to_string(search.nodes_expanded()) + "  Path " + path;
@@ -141,11 +170,17 @@ Visualizer::Layout Visualizer::layout_for(int max_width, int max_height) const {
     layout.margin = kMargin;
     layout.header_height = kHeaderHeight;
 
-    int fit_width = (max_width - 2 * kMargin - (panels - 1) * kPanelGap) / (panels * size);
-    int fit_height = (max_height - 2 * kMargin - kHeaderHeight - kPanelGap - 2 * kLegendRowHeight) / size;
-    layout.cell = std::clamp(std::min(fit_width, fit_height), kMinCell, kMaxCell);
+    int panel_room = (max_width - 2 * kMargin - (panels - 1) * kPanelGap) / panels;
+    int height_room = max_height - 2 * kMargin - kHeaderHeight - kPanelGap - 2 * kLegendRowHeight;
+    int fit = std::min((panel_room - 1) / size, (height_room - 1) / size);
+    if (fit >= kMinCell) {
+        layout.cell = std::min(fit, kMaxCell);
+        layout.maze_pixels = size * layout.cell + 1;
+    } else {
+        layout.cell = 0;
+        layout.maze_pixels = std::max(64, std::min(panel_room, height_room));
+    }
 
-    layout.maze_pixels = size * layout.cell + 1;
     layout.panel_width = std::max(layout.maze_pixels, text_width("Expanded 000000  Path 000000"));
     layout.width = 2 * kMargin + panels * layout.panel_width + (panels - 1) * kPanelGap;
     layout.legend_top = kMargin + kHeaderHeight + layout.maze_pixels + kPanelGap;
@@ -154,11 +189,10 @@ Visualizer::Layout Visualizer::layout_for(int max_width, int max_height) const {
     return layout;
 }
 
-void Visualizer::draw(SDL_Renderer *renderer, const Layout &layout) const {
+void Visualizer::draw(SDL_Renderer *renderer, const Layout &layout) {
     set_colour(renderer, kBackground);
     SDL_RenderClear(renderer);
 
-    const int cell = layout.cell;
     for (size_t i = 0; i < searches_.size(); i++) {
         const Search &search = searches_[i];
         int panel_x = layout.margin + static_cast<int>(i) * (layout.panel_width + kPanelGap);
@@ -169,46 +203,12 @@ void Visualizer::draw(SDL_Renderer *renderer, const Layout &layout) const {
         draw_text(renderer, panel_x + layout.panel_width - text_width(status), top, status, kSubtleText);
         draw_text(renderer, panel_x, top + kLineHeight + 8, stats_line(search), kSubtleText);
 
-        // Open cells are inset by one pixel over the grid-line colour, which
-        // leaves crisp lines between them. Walls cover their own line pixels
-        // so neighbouring walls merge into solid blocks. Tiny cells are drawn
-        // edge to edge with no lines.
         int maze_x = panel_x + (layout.panel_width - layout.maze_pixels) / 2;
         int maze_y = top + layout.header_height;
-        int inset = cell >= kMinCellWithLines ? 1 : 0;
-        fill(renderer, maze_x, maze_y, layout.maze_pixels, layout.maze_pixels, inset ? kGridLine : kWall);
-        for (int y = 0; y < grid_.height(); y++) {
-            for (int x = 0; x < grid_.width(); x++) {
-                Point p{x, y};
-                int px = maze_x + x * cell;
-                int py = maze_y + y * cell;
-                if (grid_.is_wall(p)) {
-                    fill(renderer, px, py, cell + 1, cell + 1, kWall);
-                    continue;
-                }
-                Colour colour = kFloor;
-                if (p == start_) {
-                    colour = kStart;
-                } else if (p == end_) {
-                    colour = kEnd;
-                } else {
-                    switch (search.state(p)) {
-                    case CellState::Unseen:
-                        colour = kFloor;
-                        break;
-                    case CellState::Frontier:
-                        colour = kFrontier;
-                        break;
-                    case CellState::Visited:
-                        colour = kVisited;
-                        break;
-                    case CellState::Path:
-                        colour = kPath;
-                        break;
-                    }
-                }
-                fill(renderer, px + inset, py + inset, cell + 1 - 2 * inset, cell + 1 - 2 * inset, colour);
-            }
+        if (layout.cell > 0) {
+            draw_cells(renderer, search, maze_x, maze_y, layout.cell);
+        } else {
+            draw_texture(renderer, i, maze_x, maze_y, layout.maze_pixels);
         }
     }
 
@@ -218,6 +218,87 @@ void Visualizer::draw(SDL_Renderer *renderer, const Layout &layout) const {
         fill(renderer, left, top, kLegendSwatch, kLegendSwatch, item.colour);
         draw_text(renderer, left + kLegendSwatch + 6, top, item.label, kSubtleText);
     });
+}
+
+void Visualizer::draw_cells(SDL_Renderer *renderer, const Search &search, int x, int y, int cell) const {
+    // Open cells are inset by one pixel over the grid-line colour, which
+    // leaves crisp lines between them. Walls cover their own line pixels so
+    // neighbouring walls merge into solid blocks. Cells are batched by colour
+    // so a frame costs one draw call per colour.
+    int pixels = grid_.width() * cell + 1;
+    fill(renderer, x, y, pixels, grid_.height() * cell + 1, kGridLine);
+
+    std::vector<SDL_Rect> batches[kCellColours];
+    for (int row = 0; row < grid_.height(); row++) {
+        for (int col = 0; col < grid_.width(); col++) {
+            CellColour colour = cell_colour(grid_, search, {col, row}, start_, end_);
+            int px = x + col * cell;
+            int py = y + row * cell;
+            if (colour == kWallCell) {
+                batches[colour].push_back({px, py, cell + 1, cell + 1});
+            } else {
+                batches[colour].push_back({px + 1, py + 1, cell - 1, cell - 1});
+            }
+        }
+    }
+    for (int colour = 0; colour < kCellColours; colour++) {
+        if (!batches[colour].empty()) {
+            set_colour(renderer, kCellPalette[colour]);
+            SDL_RenderFillRects(renderer, batches[colour].data(), static_cast<int>(batches[colour].size()));
+        }
+    }
+}
+
+void Visualizer::draw_texture(SDL_Renderer *renderer, size_t panel, int x, int y, int pixels) {
+    // One texel per cell, scaled to fit the panel, keeps very large mazes
+    // inside the window and cheap to draw. Shrinking blends neighbouring
+    // cells instead of dropping whole rows of them.
+    if (textures_.size() != searches_.size()) {
+        release_textures();
+        for (size_t i = 0; i < searches_.size(); i++) {
+            PanelTexture panel_texture;
+            panel_texture.texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
+                                                      SDL_TEXTUREACCESS_STREAMING, grid_.width(), grid_.height());
+            if (panel_texture.texture) {
+                SDL_SetTextureScaleMode(panel_texture.texture,
+                                        pixels < grid_.width() ? SDL_ScaleModeLinear : SDL_ScaleModeNearest);
+            }
+            panel_texture.pixels.assign(grid_.cell_count(), 0);
+            // No real state matches this, so the first frame paints every cell.
+            panel_texture.drawn.assign(grid_.cell_count(), static_cast<CellState>(0xff));
+            textures_.push_back(std::move(panel_texture));
+        }
+    }
+
+    PanelTexture &panel_texture = textures_[panel];
+    if (!panel_texture.texture) {
+        fill(renderer, x, y, pixels, pixels, kWall);
+        return;
+    }
+    const Search &search = searches_[panel];
+    const std::vector<CellState> &states = search.states();
+    for (int i = 0; i < grid_.cell_count(); i++) {
+        if (states[i] == panel_texture.drawn[i]) {
+            continue;
+        }
+        panel_texture.drawn[i] = states[i];
+        Colour c = kCellPalette[cell_colour(grid_, search, grid_.point(i), start_, end_)];
+        panel_texture.pixels[i] =
+            0xff000000u | static_cast<uint32_t>(c.r) << 16 | static_cast<uint32_t>(c.g) << 8 | c.b;
+    }
+    SDL_UpdateTexture(panel_texture.texture, nullptr, panel_texture.pixels.data(),
+                      grid_.width() * static_cast<int>(sizeof(uint32_t)));
+    SDL_Rect target{x, y, pixels, pixels};
+    SDL_RenderCopy(renderer, panel_texture.texture, nullptr, &target);
+}
+
+void Visualizer::release_textures() {
+    for (PanelTexture &panel_texture : textures_) {
+        if (panel_texture.texture) {
+            SDL_DestroyTexture(panel_texture.texture);
+        }
+    }
+    textures_.clear();
 }
 
 int Visualizer::run_window(int delay_ms, const std::string &title) {
@@ -311,6 +392,7 @@ int Visualizer::run_window(int delay_ms, const std::string &title) {
         }
     }
 
+    release_textures();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
@@ -350,6 +432,7 @@ int Visualizer::record(int delay_ms, const std::string &directory) {
         ok = save_frame();
     }
 
+    release_textures();
     SDL_DestroyRenderer(renderer);
     SDL_FreeSurface(surface);
     if (!ok) {

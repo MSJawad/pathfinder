@@ -36,7 +36,7 @@ std::optional<std::vector<Algorithm>> parse_algorithms(const std::string &text) 
     if (text == "all") {
         return std::vector<Algorithm>{Algorithm::AStar, Algorithm::Dijkstra, Algorithm::BFS};
     }
-    if (text == "astar" || text == "a*") {
+    if (text == "astar") {
         return std::vector<Algorithm>{Algorithm::AStar};
     }
     if (text == "dijkstra") {
@@ -60,13 +60,7 @@ ParseResult parse_args(const std::vector<std::string> &args) {
     };
 
     for (size_t i = 0; i < args.size(); i++) {
-        std::string flag = args[i];
-        std::optional<std::string> inline_value;
-        size_t equals = flag.find('=');
-        if (flag.rfind("--", 0) == 0 && equals != std::string::npos) {
-            inline_value = flag.substr(equals + 1);
-            flag = flag.substr(0, equals);
-        }
+        const std::string &flag = args[i];
 
         if (flag == "-h" || flag == "--help") {
             options.help = true;
@@ -83,14 +77,10 @@ ParseResult parse_args(const std::vector<std::string> &args) {
             return fail("unknown option '" + args[i] + "'");
         }
 
-        std::string value;
-        if (inline_value) {
-            value = *inline_value;
-        } else if (i + 1 < args.size()) {
-            value = args[++i];
-        } else {
+        if (i + 1 >= args.size()) {
             return fail("missing value for " + flag);
         }
+        const std::string &value = args[++i];
 
         if (flag == "--size") {
             auto size = parse_integer(value);

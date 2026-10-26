@@ -1,8 +1,10 @@
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <optional>
 #include <random>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "cli.h"
@@ -71,6 +73,8 @@ int main(int argc, char *argv[]) {
                   << " (seeds " << seed << " and up), start " << start.str() << ", end " << end.str() << "\n";
     }
 
+    // The first maze is kept for the window, which shows the --seed maze.
+    std::optional<Grid> first_grid;
     for (int run = 0; run < options.runs; run++) {
         const uint32_t run_seed = seed + static_cast<uint32_t>(run);
         Grid grid = generate_maze(options.size, run_seed);
@@ -83,6 +87,9 @@ int main(int argc, char *argv[]) {
             row.path += result.path_length;
             row.milliseconds += result.milliseconds;
         }
+        if (run == 0) {
+            first_grid = std::move(grid);
+        }
     }
     print_table(totals, options.runs);
 
@@ -90,8 +97,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    Grid grid = generate_maze(options.size, seed);
-    Visualizer visualizer{grid, start, end, options.algorithms};
+    Visualizer visualizer{*first_grid, start, end, options.algorithms};
     if (!options.record_dir.empty()) {
         std::error_code error;
         std::filesystem::create_directories(options.record_dir, error);

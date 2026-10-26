@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.20)
 project(pathfinder LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -30,7 +30,7 @@ add_library(pathfinder_core STATIC src/grid.cc src/maze.cc src/search.cc src/cli
 target_include_directories(pathfinder_core PUBLIC src)
 pathfinder_warnings(pathfinder_core)
 
-find_package(SDL2 REQUIRED CONFIG)
+find_package(SDL2 2.0.18 REQUIRED CONFIG)
 
 add_executable(pathfinder src/main.cc src/renderer.cc src/font.cc)
 target_link_libraries(pathfinder PRIVATE pathfinder_core SDL2::SDL2)

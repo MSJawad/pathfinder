@@ -9,12 +9,15 @@
 #include "search.h"
 
 struct SDL_Renderer;
+struct SDL_Texture;
 
 // Draws one maze panel per algorithm side by side and steps every search
 // together, so their frontiers can be compared on the same maze.
 class Visualizer {
   public:
     struct Layout {
+        // Pixels per maze cell, or 0 when the maze is too big for whole
+        // cells and is drawn as a scaled texture instead.
         int cell = 0;
         int margin = 0;
         int panel_width = 0;
@@ -40,13 +43,25 @@ class Visualizer {
     Point end_;
     std::vector<Algorithm> algorithms_;
     std::vector<Search> searches_;
+    // Used when the maze is too big to draw cell by cell: a one-texel-per-cell
+    // texture per panel, plus the cell states it currently shows so each
+    // frame only repaints the cells that changed.
+    struct PanelTexture {
+        SDL_Texture *texture = nullptr;
+        std::vector<uint32_t> pixels;
+        std::vector<CellState> drawn;
+    };
+    std::vector<PanelTexture> textures_;
     bool paused_ = false;
 
     void restart();
     bool all_finished() const;
     void advance(int steps);
     Layout layout_for(int max_width, int max_height) const;
-    void draw(SDL_Renderer *renderer, const Layout &layout) const;
+    void draw(SDL_Renderer *renderer, const Layout &layout);
+    void draw_cells(SDL_Renderer *renderer, const Search &search, int x, int y, int cell) const;
+    void draw_texture(SDL_Renderer *renderer, size_t panel, int x, int y, int pixels);
+    void release_textures();
 };
 
 #endif

@@ -25,7 +25,7 @@ TEST(Cli, DefaultsWithNoArguments) {
 }
 
 TEST(Cli, ParsesEveryOption) {
-    ParseResult result = parse({"--size", "21", "--start", "1,3", "--end=19,17", "--algo", "dijkstra", "--seed",
+    ParseResult result = parse({"--size", "21", "--start", "1,3", "--end", "19,17", "--algo", "dijkstra", "--seed",
                                 "4294967295", "--delay-ms", "0", "--headless", "--runs", "10"});
     ASSERT_EQ(result.error, "");
     const Options &options = result.options;
@@ -70,6 +70,8 @@ TEST(Cli, RejectsBadInput) {
         {"--record", "frames", "--headless"},
         {"--bogus"},
         {"--bogus=1"},
+        {"--size=21"},
+        {"--algo", "a*"},
         {"extra"},
     };
     for (const auto &args : bad) {
@@ -84,4 +86,12 @@ TEST(Cli, RejectsBadInput) {
 TEST(Cli, UnknownOptionIsNamed) {
     EXPECT_EQ(parse({"--bogus"}).error, "unknown option '--bogus'");
     EXPECT_EQ(parse({"--bogus=1"}).error, "unknown option '--bogus=1'");
+}
+
+// Only the documented "--flag value" spelling parses, so a value glued on
+// with '=' is never silently dropped.
+TEST(Cli, RejectsInlineValues) {
+    EXPECT_EQ(parse({"--headless=no"}).error, "unknown option '--headless=no'");
+    EXPECT_EQ(parse({"--help=0"}).error, "unknown option '--help=0'");
+    EXPECT_EQ(parse({"--seed=5"}).error, "unknown option '--seed=5'");
 }

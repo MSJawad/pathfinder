@@ -66,6 +66,8 @@ class Search {
     int path_length() const { return static_cast<int>(path_.size()) - 1; }
     const std::vector<Point> &path() const { return path_; }
     CellState state(Point p) const { return state_[grid_.index(p)]; }
+    // Every cell's state, indexed by Grid::index.
+    const std::vector<CellState> &states() const { return state_; }
 };
 
 struct SearchResult {

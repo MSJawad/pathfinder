@@ -52,8 +52,8 @@ every platform.
 
 ## Building
 
-You need a C++17 compiler, CMake 3.16 or newer and SDL2. The build downloads
-GoogleTest for the tests.
+You need a C++17 compiler, CMake 3.20 or newer and SDL 2.0.18 or newer. The
+build downloads GoogleTest for the tests.
 
 **macOS** (with [Homebrew](https://brew.sh)):
 
@@ -106,6 +106,12 @@ Some examples:
 ./build/pathfinder --headless --seed 7                    # stats only, no window
 ```
 
+The window always fits the screen. When a maze is too big to give every cell
+its own grid-lined square, each panel is drawn as one scaled image instead,
+so even `--size 1001` stays on screen and animates smoothly. Big mazes have
+hundreds of thousands of cells to expand, so pair them with a small
+`--delay-ms` (or `0` to jump straight to the result).
+
 The demo GIF above is made from the program's own frames by
 [`scripts/make-demo-gif.sh`](scripts/make-demo-gif.sh), which runs
 `pathfinder --record` and needs `ffmpeg`.
@@ -124,7 +130,7 @@ The demo GIF above is made from the program's own frames by
 
 ## History and credits
 
-I first wrote this in 2020 as a single-panel A\* visualizer drawn with raw
+I first wrote this over the winter of 2019-20 as a single-panel A\* visualizer drawn with raw
 Xlib. Its drawing code used the `Xwindow` helper class that the University of
 Waterloo's CS 246 course gives to its students. That code has since been
 replaced by SDL2 so the program runs natively on macOS, and none of the helper
