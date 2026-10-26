@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: release
+            cmake_args: -DCMAKE_BUILD_TYPE=Release
+          - name: ASan + UBSan
+            cmake_args: -DCMAKE_BUILD_TYPE=Debug -DPATHFINDER_SANITIZE=ON
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install SDL2
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libsdl2-dev
+      - name: Configure
+        run: cmake -S . -B build -DPATHFINDER_WERROR=ON ${{ matrix.cmake_args }}
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Headless benchmark
+        run: ./build/pathfinder --headless --seed 1 --size 101 --runs 200
+
+  macos:
+    name: macOS
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install SDL2
+        run: brew install sdl2
+      - name: Configure
+        run: cmake -S . -B build -DPATHFINDER_WERROR=ON
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Headless benchmark
+        run: ./build/pathfinder --headless --seed 1 --size 101 --runs 200
