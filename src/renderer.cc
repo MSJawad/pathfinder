@@ -51,7 +51,6 @@ constexpr int kTextScale = 2;
 constexpr int kLineHeight = font::kGlyphHeight * kTextScale;
 constexpr int kMargin = 16;
 constexpr int kPanelGap = 32;
-constexpr int kHeaderHeight = kLineHeight * 2 + 8 + 14;
 constexpr int kLegendSwatch = kLineHeight;
 constexpr int kLegendRowHeight = kLineHeight + 10;
 // Smaller cells would leave no room between the grid lines, so mazes that
@@ -60,12 +59,29 @@ constexpr int kMinCell = 4;
 constexpr int kMaxCell = 32;
 constexpr int kFramesPerSecond = 30;
 
-int text_width(const std::string &text) {
+int text_width(const std::string &text, int scale = kTextScale) {
     if (text.empty()) {
         return 0;
     }
-    return static_cast<int>(text.size()) * (font::kGlyphWidth + 1) * kTextScale - kTextScale;
+    return static_cast<int>(text.size()) * (font::kGlyphWidth + 1) * scale - scale;
 }
+
+// A panel's header is the algorithm name and status on one line with the
+// stats below. The stats share a line when the panel is wide enough,
+// otherwise they take two, and the text shrinks when even that would not fit.
+struct HeaderStyle {
+    int text_scale;
+    int stats_lines;
+
+    int line_pitch() const { return (font::kGlyphHeight + 4) * text_scale; }
+    int height() const { return (1 + stats_lines) * line_pitch() - 4 * text_scale + 14; }
+    // The widest stats the header is sized for; six digits covers --size 1001.
+    int stats_width() const {
+        return text_width(stats_lines == 1 ? "Expanded 000000  Path 000000" : "Expanded 000000", text_scale);
+    }
+};
+
+constexpr HeaderStyle kHeaderStyles[] = {{kTextScale, 1}, {kTextScale, 2}, {1, 2}};
 
 void set_colour(SDL_Renderer *renderer, Colour c) { SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 0xff); }
 
@@ -75,19 +91,19 @@ void fill(SDL_Renderer *renderer, int x, int y, int w, int h, Colour c) {
     SDL_RenderFillRect(renderer, &rect);
 }
 
-void draw_text(SDL_Renderer *renderer, int x, int y, const std::string &text, Colour c) {
+void draw_text(SDL_Renderer *renderer, int x, int y, const std::string &text, Colour c, int scale = kTextScale) {
     set_colour(renderer, c);
     for (char ch : text) {
         const uint8_t *rows = font::glyph(ch);
         for (int row = 0; row < font::kGlyphHeight; row++) {
             for (int col = 0; col < font::kGlyphWidth; col++) {
                 if (rows[row] & (1 << (font::kGlyphWidth - 1 - col))) {
-                    SDL_Rect pixel{x + col * kTextScale, y + row * kTextScale, kTextScale, kTextScale};
+                    SDL_Rect pixel{x + col * scale, y + row * scale, scale, scale};
                     SDL_RenderFillRect(renderer, &pixel);
                 }
             }
         }
-        x += (font::kGlyphWidth + 1) * kTextScale;
+        x += (font::kGlyphWidth + 1) * scale;
     }
 }
 
@@ -131,11 +147,6 @@ CellColour cell_colour(const Grid &grid, const Search &search, Point p, Point st
     return kFloorCell;
 }
 
-std::string stats_line(const Search &search) {
-    std::string path = search.found() ? std::to_string(search.path_length()) : "-";
-    return "Expanded " + std::to_string(search.nodes_expanded()) + "  Path " + path;
-}
-
 } // namespace
 
 Visualizer::Visualizer(const Grid &grid, Point start, Point end, std::vector<Algorithm> algorithms)
@@ -165,13 +176,24 @@ void Visualizer::advance(int steps) {
 Visualizer::Layout Visualizer::layout_for(int max_width, int max_height) const {
     const int panels = static_cast<int>(searches_.size());
     const int size = std::max(grid_.width(), grid_.height());
+    const int panel_room = (max_width - 2 * kMargin - (panels - 1) * kPanelGap) / panels;
+
+    // The roomiest header whose stats fit the panel, or else the tightest one.
+    HeaderStyle header = kHeaderStyles[0];
+    for (HeaderStyle candidate : kHeaderStyles) {
+        header = candidate;
+        if (header.stats_width() <= panel_room) {
+            break;
+        }
+    }
 
     Layout layout;
     layout.margin = kMargin;
-    layout.header_height = kHeaderHeight;
+    layout.text_scale = header.text_scale;
+    layout.stats_lines = header.stats_lines;
+    layout.header_height = header.height();
 
-    int panel_room = (max_width - 2 * kMargin - (panels - 1) * kPanelGap) / panels;
-    int height_room = max_height - 2 * kMargin - kHeaderHeight - kPanelGap - 2 * kLegendRowHeight;
+    int height_room = max_height - 2 * kMargin - layout.header_height - kPanelGap - 2 * kLegendRowHeight;
     int fit = std::min((panel_room - 1) / size, (height_room - 1) / size);
     if (fit >= kMinCell) {
         layout.cell = std::min(fit, kMaxCell);
@@ -181,9 +203,9 @@ Visualizer::Layout Visualizer::layout_for(int max_width, int max_height) const {
         layout.maze_pixels = std::max(64, std::min(panel_room, height_room));
     }
 
-    layout.panel_width = std::max(layout.maze_pixels, text_width("Expanded 000000  Path 000000"));
+    layout.panel_width = std::max(layout.maze_pixels, std::min(header.stats_width(), panel_room));
     layout.width = 2 * kMargin + panels * layout.panel_width + (panels - 1) * kPanelGap;
-    layout.legend_top = kMargin + kHeaderHeight + layout.maze_pixels + kPanelGap;
+    layout.legend_top = kMargin + layout.header_height + layout.maze_pixels + kPanelGap;
     int legend_rows = layout_legend(layout.width - 2 * kMargin, [](const LegendItem &, int, int) {});
     layout.height = layout.legend_top + legend_rows * kLegendRowHeight - (kLegendRowHeight - kLineHeight) + kMargin;
     return layout;
@@ -193,15 +215,24 @@ void Visualizer::draw(SDL_Renderer *renderer, const Layout &layout) {
     set_colour(renderer, kBackground);
     SDL_RenderClear(renderer);
 
+    const HeaderStyle header{layout.text_scale, layout.stats_lines};
     for (size_t i = 0; i < searches_.size(); i++) {
         const Search &search = searches_[i];
         int panel_x = layout.margin + static_cast<int>(i) * (layout.panel_width + kPanelGap);
         int top = layout.margin;
+        int scale = header.text_scale;
 
-        draw_text(renderer, panel_x, top, algorithm_name(search.algorithm()), kText);
+        draw_text(renderer, panel_x, top, algorithm_name(search.algorithm()), kText, scale);
         std::string status = paused_ ? "Paused" : !search.finished() ? "" : search.found() ? "Done" : "No path";
-        draw_text(renderer, panel_x + layout.panel_width - text_width(status), top, status, kSubtleText);
-        draw_text(renderer, panel_x, top + kLineHeight + 8, stats_line(search), kSubtleText);
+        draw_text(renderer, panel_x + layout.panel_width - text_width(status, scale), top, status, kSubtleText, scale);
+        std::string expanded = "Expanded " + std::to_string(search.nodes_expanded());
+        std::string path = "Path " + (search.found() ? std::to_string(search.path_length()) : "-");
+        if (header.stats_lines == 1) {
+            draw_text(renderer, panel_x, top + header.line_pitch(), expanded + "  " + path, kSubtleText, scale);
+        } else {
+            draw_text(renderer, panel_x, top + header.line_pitch(), expanded, kSubtleText, scale);
+            draw_text(renderer, panel_x, top + 2 * header.line_pitch(), path, kSubtleText, scale);
+        }
 
         int maze_x = panel_x + (layout.panel_width - layout.maze_pixels) / 2;
         int maze_y = top + layout.header_height;

@@ -21,6 +21,9 @@ class Visualizer {
         int cell = 0;
         int margin = 0;
         int panel_width = 0;
+        // Header text size, and whether the stats take one line or two.
+        int text_scale = 0;
+        int stats_lines = 0;
         int header_height = 0;
         int maze_pixels = 0;
         int legend_top = 0;
